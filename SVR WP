@@ -1,0 +1,35 @@
+#SVR modelling
+import numpy as np
+import pandas as pd
+from sklearn.svm import SVR
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
+# df = pd.read_csv('your_data_file.csv')
+
+print(df.columns)
+
+X = df[['Wind_Speed']].values  # feature name
+y = df['Power_Output'].values  # target name
+
+# Splitting the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Standardizing the features
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# Creating an SVR model
+svr = SVR(kernel='rbf', C=1000, epsilon=0.1)
+
+# Training the SVR model
+svr.fit(X_train_scaled, y_train)
+
+# Evaluating the model on the test set
+mse = np.mean((svr.predict(X_test_scaled) - y_test) ** 2)
+print("Mean Squared Error:", mse)
+
+predictions = svr.predict(X_test_scaled)
+for actual, predicted in zip(y_test, predictions):
+    print(f"Actual: {actual}, Predicted: {predicted}")
