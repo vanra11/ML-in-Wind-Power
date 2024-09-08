@@ -1,0 +1,60 @@
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+import matplotlib.pyplot as plt
+from keras.models import Sequential
+from keras.layers import Dense
+
+# Loading and prepare the data
+wind_speed = [1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14, 14.5, 15, 15.5, 16, 16.5, 17, 17.5, 18]
+power_output = [109, 169, 207, 231, 215, 242, 292, 367, 309, 362, 363, 329, 330, 346, 665.7, 779.8, 942.5, 1073.30, 1200.20, 1329.50, 1354.00, 1385.00, 1366.00, 1364.80, 1501.30, 1515.50, 1498.40, 1521.30, 1522.10, 1526.30, 1530.20, 1524.20, 1531.50, 1525.50]
+
+# Creating a DataFrame
+import pandas as pd
+df = pd.DataFrame({'Wind_Speed': wind_speed, 'Power_Output': power_output[:len(wind_speed)]})
+
+# Defining features and target
+X = df[['Wind_Speed']]
+y = df['Power_Output']
+
+# Normalizing the data
+scaler_X = MinMaxScaler(feature_range=(0, 1))
+scaler_y = MinMaxScaler(feature_range=(0, 1))
+X_scaled = scaler_X.fit_transform(X)
+y_scaled = scaler_y.fit_transform(y.values.reshape(-1, 1))
+
+# Splitting the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y_scaled, test_size=0.2, random_state=42)
+
+# Defining the GRNN model
+grnn_model = Sequential()
+grnn_model.add(Dense(128, activation='relu', input_shape=(X_train.shape[1],)))
+grnn_model.add(Dense(64, activation='relu'))
+grnn_model.add(Dense(32, activation='relu'))
+grnn_model.add(Dense(1))
+grnn_model.compile(loss='mean_squared_error', optimizer='adam')
+
+# Training the GRNN model
+grnn_model.fit(X_train, y_train, epochs=100, batch_size=32, verbose=2)
+
+# Making predictions with the GRNN model
+y_pred_grnn = grnn_model.predict(X_test)
+
+# Inverse transforming the predictions
+y_pred_grnn = scaler_y.inverse_transform(y_pred_grnn)
+y_test = scaler_y.inverse_transform(y_test)
+
+# Evaluating the GRNN model
+mse_grnn = mean_squared_error(y_test, y_pred_grnn)
+print("Mean Squared Error (GRNN):", mse_grnn)
+
+# Plotting actual vs predicted values
+plt.figure(figsize=(12, 8))
+plt.plot(y_test, color='blue', label='Actual Power Output')
+plt.plot(y_pred_grnn, color='red', linestyle='--', label='GRNN Predicted Power Output')
+plt.title('GRNN: Actual vs Predicted Power Output')
+plt.xlabel('Samples')
+plt.ylabel('Power Output (kW)')
+plt.legend()
+plt.show()
