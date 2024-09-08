@@ -1,0 +1,45 @@
+#Random forest regression
+import numpy as np
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
+
+# df = pd.read_csv('your_data_file.csv')
+
+X = df[['Wind_Speed']].values  # Use the correct feature name
+y = df['Power_Output'].values  # Use the correct target name
+
+# Spliting the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Standardizing the features (optional, depending on the data)
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# Creating a Random Forest Regressor
+rf = RandomForestRegressor(n_estimators=100, random_state=42)
+
+# Training the Random Forest Regressor
+rf.fit(X_train_scaled, y_train)
+
+# Evaluating the model on the test set
+mse = np.mean((rf.predict(X_test_scaled) - y_test) ** 2)
+print("Mean Squared Error:", mse)
+
+# Predicting on the test set
+predictions = rf.predict(X_test_scaled)
+
+# Plotting actual vs. predicted values
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(10, 6))
+plt.scatter(y_test, predictions, color='blue', label='Predicted Values', alpha=0.7)
+plt.plot(y_test, y_test, color='red', label='Perfect Prediction', linestyle='--')
+plt.title('Random Forest Regression: Actual vs Predicted Power Output')
+plt.xlabel('Actual Power Output (kW)')
+plt.ylabel('Predicted Power Output (kW)')
+plt.legend()
+plt.grid()
+plt.show()
