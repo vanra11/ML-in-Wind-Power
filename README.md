@@ -63,6 +63,7 @@ Hybrid approaches combine physical and statistical models to leverage the streng
 | Ensemble Learning     | Good        | High                | Low       | Combines strengths of multiple models, performs well across the range |
 | GRNN                  | Good        | Medium-High         | Low       | Follows the trend well, slight underprediction at peaks       |
 | Linear Regression     | Poor        | Low                 | High      | Fails to capture the non-linear relationship between wind speed and power output |
+| MLP                   | Good        | Medium-High         | Low       | Type of feedforward ANN that models non-linear relationships, learns from historical data |
 
 ## Conclusion
 
