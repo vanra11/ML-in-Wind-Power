@@ -4,6 +4,9 @@
 
 This repository contains a review of various methods applied for wind power generation forecasting. As the demand for renewable energy sources increases, accurate forecasting tools become essential for wind farm operators and transmission system operators. This project aims to provide insights into different forecasting methods, their performance, and their applicability in real-world scenarios.
 
+Output can be viewed:
+https://colab.research.google.com/drive/1z0GGG-_7Y-Hn8QZCP8_q9KxskFSRo2pS?usp=sharing
+
 ## Table of Contents
 
 - [Introduction](#introduction)
