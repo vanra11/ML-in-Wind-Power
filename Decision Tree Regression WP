@@ -35,3 +35,4 @@ plt.ylabel('Power Output')
 plt.title('Decision Tree Regression: Wind Speed vs Power Output')
 plt.legend()
 plt.show()
+
