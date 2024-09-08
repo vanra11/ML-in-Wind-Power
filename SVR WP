@@ -33,3 +33,4 @@ print("Mean Squared Error:", mse)
 predictions = svr.predict(X_test_scaled)
 for actual, predicted in zip(y_test, predictions):
     print(f"Actual: {actual}, Predicted: {predicted}")
+
