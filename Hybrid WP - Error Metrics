@@ -1,0 +1,80 @@
+from sklearn.ensemble import RandomForestRegressor
+from tensorflow.keras.layers import SimpleRNN
+
+# 4a. Define and Train RNN Model
+def create_rnn_model(input_shape):
+    model = Sequential()
+    model.add(SimpleRNN(50, return_sequences=True, input_shape=input_shape))
+    model.add(Dropout(0.2))
+    model.add(SimpleRNN(50))
+    model.add(Dropout(0.2))
+    model.add(Dense(1))  # Output layer
+    model.compile(optimizer='adam', loss='mean_squared_error')
+    return model
+
+rnn_model = create_rnn_model((X_train.shape[1], 1))
+rnn_model.fit(X_train, y_train, epochs=50, batch_size=32)
+
+# Make predictions with RNN
+y_pred_rnn = rnn_model.predict(X_test)
+
+# 4b. Define and Train Random Forest Model
+rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
+rf_model.fit(X_train.reshape(X_train.shape[0], -1), y_train)
+
+# Make predictions with Random Forest
+y_pred_rf = rf_model.predict(X_test.reshape(X_test.shape[0], -1))
+
+# 6a. Combine LSTM with ANN
+y_combined_ann = (y_pred_lstm.flatten() + y_pred_ann.flatten()) / 2
+
+# 6b. Combine LSTM with SVM
+y_combined_svm = (y_pred_lstm.flatten() + y_pred_svm.flatten()) / 2
+
+# 6c. Combine LSTM with RNN
+y_combined_rnn = (y_pred_lstm.flatten() + y_pred_rnn.flatten()) / 2
+
+# 6d. Combine LSTM with Random Forest
+y_combined_rf = (y_pred_lstm.flatten() + y_pred_rf) / 2
+
+# Align predictions by trimming to the shortest length for consistency
+min_len = min(len(y_test_combined), len(y_combined_ann), len(y_combined_svm), len(y_combined_rnn), len(y_combined_rf))
+y_test_combined = y_test_combined[:min_len]
+y_combined_ann = y_combined_ann[:min_len]
+y_combined_svm = y_combined_svm[:min_len]
+y_combined_rnn = y_combined_rnn[:min_len]
+y_combined_rf = y_combined_rf[:min_len]
+
+# 8. Bar Plot for Error Metrics of Combined Models
+combined_metrics = {
+    'LSTM + ANN': [mean_squared_error(y_test_combined, y_combined_ann),
+                   mean_absolute_error(y_test_combined, y_combined_ann),
+                   np.sqrt(mean_squared_error(y_test_combined, y_combined_ann)),
+                   r2_score(y_test_combined, y_combined_ann)],
+
+    'LSTM + SVM': [mean_squared_error(y_test_combined, y_combined_svm),
+                   mean_absolute_error(y_test_combined, y_combined_svm),
+                   np.sqrt(mean_squared_error(y_test_combined, y_combined_svm)),
+                   r2_score(y_test_combined, y_combined_svm)],
+
+    'LSTM + RNN': [mean_squared_error(y_test_combined, y_combined_rnn),
+                   mean_absolute_error(y_test_combined, y_combined_rnn),
+                   np.sqrt(mean_squared_error(y_test_combined, y_combined_rnn)),
+                   r2_score(y_test_combined, y_combined_rnn)],
+
+    'LSTM + RF': [mean_squared_error(y_test_combined, y_combined_rf),
+                  mean_absolute_error(y_test_combined, y_combined_rf),
+                  np.sqrt(mean_squared_error(y_test_combined, y_combined_rf)),
+                  r2_score(y_test_combined, y_combined_rf)]
+}
+
+combined_metric_df = pd.DataFrame(combined_metrics, index=metrics)
+
+# Bar plot for combined metrics
+combined_metric_df.plot(kind='bar', figsize=(12, 6))
+plt.title('Error Metrics for Combined Models')
+plt.xlabel('Metric')
+plt.ylabel('Metric Value')
+plt.xticks(rotation=0)
+plt.legend(title='Models')
+plt.show()
