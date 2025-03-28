@@ -1,0 +1,142 @@
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVR
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense, Dropout
+
+# 1. Load the Dataset
+df = pd.read_csv('/content/DataWind2021.csv')  # Replace with your dataset path
+
+# 2. Data Preparation
+# Select relevant features and target variable
+features = ['WindSpeed', 'Temperature', 'Pressure', 'Humidity']  # Include your features here
+target = 'Power_Output'
+
+if target not in df.columns:
+    df[target] = df['WindSpeed'] * 100  # Example formula, replace with actual logic
+
+df.fillna(method='ffill', inplace=True)
+
+# Split into features (X) and target (y)
+X = df[features].values
+y = df[target].values
+
+# Normalize features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Reshape X for LSTM input
+X_reshaped = X_scaled.reshape((X_scaled.shape[0], X_scaled.shape[1], 1))
+
+# Split data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X_reshaped, y, test_size=0.2, random_state=42)
+
+# 3. Define and Train LSTM Model
+def create_lstm_model(input_shape):
+    model = Sequential()
+    model.add(LSTM(50, return_sequences=True, input_shape=input_shape))
+    model.add(Dropout(0.2))
+    model.add(LSTM(50))
+    model.add(Dropout(0.2))
+    model.add(Dense(1))  # Output layer
+    model.compile(optimizer='adam', loss='mean_squared_error')
+    return model
+
+lstm_model = create_lstm_model((X_train.shape[1], 1))
+lstm_model.fit(X_train, y_train, epochs=50, batch_size=32)
+
+# Make predictions with LSTM
+y_pred_lstm = lstm_model.predict(X_test)
+
+# 4. Define and Train ANN Model
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+
+def create_ann_model(input_dim):
+    model = Sequential()
+    model.add(Dense(64, activation='relu', input_dim=input_dim))
+    model.add(Dense(32, activation='relu'))
+    model.add(Dense(1))  # Output layer
+    model.compile(optimizer='adam', loss='mean_squared_error')
+    return model
+
+ann_model = create_ann_model(X_train.shape[1])
+ann_model.fit(X_train.reshape(X_train.shape[0], -1), y_train, epochs=50, batch_size=32)
+
+# Make predictions with ANN
+y_pred_ann = ann_model.predict(X_test.reshape(X_test.shape[0], -1))
+
+# 5. Define and Train SVM Model
+svm_model = SVR(kernel='rbf')
+svm_model.fit(X_train.reshape(X_train.shape[0], -1), y_train)
+
+# Make predictions with SVM
+y_pred_svm = svm_model.predict(X_test.reshape(X_test.shape[0], -1))
+
+# 6. Align predictions by trimming to the shortest length for consistency
+min_len = min(len(y_pred_lstm), len(y_pred_ann), len(y_pred_svm))
+y_test_combined = y_test[:min_len]
+y_pred_lstm = y_pred_lstm[:min_len].flatten()
+y_pred_ann = y_pred_ann[:min_len].flatten()
+y_pred_svm = y_pred_svm[:min_len]
+
+# 7. Plot Predictions: Actual vs. Individual Models
+plt.figure(figsize=(12, 6))
+plt.plot(y_test_combined, label='Actual', color='blue', linewidth=2)
+plt.plot(y_pred_lstm, label='LSTM', color='orange', linestyle='--')
+plt.plot(y_pred_ann, label='ANN', color='green', linestyle='--')
+plt.plot(y_pred_svm, label='SVM', color='purple', linestyle='--')
+plt.title('Actual vs Predicted: Individual Models')
+plt.xlabel('Sample Index')
+plt.ylabel('Power Output')
+plt.legend()
+plt.show()
+
+# 8. Bar Plot for Error Metrics
+metrics = ['MSE', 'MAE', 'RMSE', 'R²']
+lstm_metrics = [mean_squared_error(y_test_combined, y_pred_lstm),
+                mean_absolute_error(y_test_combined, y_pred_lstm),
+                np.sqrt(mean_squared_error(y_test_combined, y_pred_lstm)),
+                r2_score(y_test_combined, y_pred_lstm)]
+
+ann_metrics = [mean_squared_error(y_test_combined, y_pred_ann),
+               mean_absolute_error(y_test_combined, y_pred_ann),
+               np.sqrt(mean_squared_error(y_test_combined, y_pred_ann)),
+               r2_score(y_test_combined, y_pred_ann)]
+
+svm_metrics = [mean_squared_error(y_test_combined, y_pred_svm),
+               mean_absolute_error(y_test_combined, y_pred_svm),
+               np.sqrt(mean_squared_error(y_test_combined, y_pred_svm)),
+               r2_score(y_test_combined, y_pred_svm)]
+
+# Combine metrics for plotting
+all_metrics = np.array([lstm_metrics, ann_metrics, svm_metrics])
+metric_df = pd.DataFrame(all_metrics, columns=metrics, index=['LSTM', 'ANN', 'SVM'])
+
+# Bar plot for error metrics
+metric_df.plot(kind='bar', figsize=(12, 6))
+plt.title('Error Metrics for Models')
+plt.xlabel('Model')
+plt.ylabel('Metric Value')
+plt.xticks(rotation=0)
+plt.legend(title='Metrics')
+plt.show()
+
+# 9. Combined Scatter Plot: Predicted vs Actual
+plt.figure(figsize=(10, 6))
+plt.scatter(y_test_combined, y_pred_lstm, label='LSTM', color='orange', alpha=0.6)
+plt.scatter(y_test_combined, y_pred_ann, label='ANN', color='green', alpha=0.6)
+plt.scatter(y_test_combined, y_pred_svm, label='SVM', color='purple', alpha=0.6)
+plt.plot([y_test_combined.min(), y_test_combined.max()],
+         [y_test_combined.min(), y_test_combined.max()],
+         color='black', linestyle='--', label='Perfect Prediction')
+plt.title('Scatter Plot: Actual vs Predicted')
+plt.xlabel('Actual Power Output')
+plt.ylabel('Predicted Power Output')
+plt.legend()
+plt.show()
